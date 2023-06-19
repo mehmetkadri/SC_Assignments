@@ -1,0 +1,718 @@
+---
+title: "Study on Blood Pressure and Level of Hemoglobin"
+author: "Mehmet Kadri GOFRALILAR - Hasan Ali ÖZKAN"
+date: "6/6/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(Amelia)
+library(corrplot)
+library(knitr)
+library(ggplot2)
+library(MASS)
+```
+<br/><br/>
+
+## 1) About Our Data
+
+<br/>
+Our datasets consist of gathered information of patients in order to discover the factors of adrenal and thyroid disorder and fixing the problem underneath.
+
+First, let's upload our datasets.
+
+```{r}
+first_data <- read.csv("first_data.csv")
+second_data <- read.csv("second_data.csv")
+```
+
+<br/><br/><br/>
+
+## 2) Exploratory and Descriptive Data Analysis
+
+<br/>
+Now, let's take a look at our datasets and their structures.
+
+```{r}
+str(first_data)
+str(second_data)
+```
+
+We can see that every column has the data type 'numeric' or 'integer'. But, we know that many columns such as ***Sex***,***Pregnancy*** and ***Smoking*** for the first dataset and ***Treatment*** and ***Gender*** for the second dataset are categorical variables and should be factorized. We will factorize them later, but first, let's check if there are any missing values in these datasets.
+
+```{r, figures-side, fig.show="hold", out.width="50%"}
+missmap(first_data,main = "First Data")
+missmap(second_data,main = "Second Data")
+```
+
+We can see that there are missing values in columns ***Pregnancy*** and ***alcohol_consumption_per_day*** in the first dataset and there are no missing values in the second dataset. We should impute them if we can.
+<br/> 
+We know that ***Pregnancy*** is a nominal variable, and ***alcohol_consumption_per_day*** is a cardinal variable. After investigating all variables in detail, we can see that **"0"** means *Male* and **"1"** means *Female* in the column ***Sex***. Therefore when the patient is a Male, since there is no chance of pregnancy, a separating value could be assigned such as 2. And when the patient is a Female and the value is missing, we assume that the patient is not pregnant, therefore 0 could be assigned. 
+<br/>
+We also assume that the missing values in ***alcohol_consumption_per_day*** are 0, since they probably don't drink, therefore there aren't any entries. 
+<br/>
+Let's impute these missing values.
+
+```{r imputation}
+first_data[which(first_data$Sex=='0'), ]$Pregnancy=2
+first_data[which(first_data$Sex=='1'& is.na(first_data$Pregnancy)), ]$Pregnancy=0
+
+first_data[which(is.na(first_data$alcohol_consumption_per_day)), ]$alcohol_consumption_per_day=0
+
+```
+
+Now, let's factorize the columns that are categorical.
+
+```{r}
+first_data$Blood_Pressure_Abnormality <- as.factor(first_data$Blood_Pressure_Abnormality)
+first_data$Sex <- as.factor(first_data$Sex)
+first_data$Smoking <- as.factor(first_data$Smoking)
+first_data$Level_of_Stress <- as.factor(first_data$Level_of_Stress)
+first_data$Chronic_kidney_disease <- as.factor(first_data$Chronic_kidney_disease)
+first_data$Adrenal_and_thyroid_disorders <- as.factor(first_data$Adrenal_and_thyroid_disorders)
+first_data$Pregnancy <- as.factor(first_data$Pregnancy)
+
+
+second_data$Gender <- as.factor(second_data$Gender)
+second_data$Treatment <- as.factor(second_data$Treatment)
+```
+
+Let's check the structures again.
+
+```{r}
+str(first_data)
+str(second_data)
+```
+
+Everything seems to be okay. Now, we should check the linear correlation to see if there is any linear relationship between variables. This might be useful when we are trying to predict the ***Level_of_Hemoglobin***.
+
+```{r}
+first_data.cor <- cor(first_data[,c(3,4,5,9,10,11)])
+corrplot(first_data.cor, method="circle")
+```
+
+<br/><br/><br/>
+
+## 3) Data Visualization
+<br/>
+Since we want to predict the ***Level_of_Hemoglobin***, and there is a moderate negative association between ***Level_of_Hemoglobin*** and ***Age***, we wanted to check whether ***Sex*** also has a linear association or not.
+
+```{r}
+ggplot(first_data, aes(x = Age, y = Level_of_Hemoglobin, color=Sex)) +
+  geom_point(stat="identity")+
+  scale_color_discrete(labels=c('Male', 'Female'))+
+  labs(
+    x = "Age",
+    y = "Level of Hemoglobin",
+    title = "Level of Hemoglobin According to Age and Sex")
+```
+
+We can say that Male patients have a higher Hemoglobin level and younger patients also have a higher Hemoglobin level in our sample.
+<br/><br/>
+Now, it would be good if we check the distribution of the ***Level_of_Hemoglobin*** variable.
+
+```{r}
+ggplot(first_data, aes(x=Level_of_Hemoglobin)) + 
+  geom_histogram(aes(y=..density..),colour="black", fill="white",binwidth = 0.1)+
+  geom_density(alpha=.2, fill="#FF6666") 
+```
+
+We can say that the distribution is almost normal but there is a right-skewness. We can fix that by using transformation(such as log-transformation). 
+
+```{r}
+first_data$Log_Level_of_Hemoglobin <- log(first_data$Level_of_Hemoglobin)
+ggplot(first_data, aes(x=Log_Level_of_Hemoglobin)) + 
+  geom_histogram(aes(y=..density..),colour="black", fill="white",binwidth = 0.01)+
+  geom_density(alpha=.2, fill="#FF6666") 
+```
+
+As you can see, it looks much more like a normally distributed variable.
+<br/>
+Now, let's check whether pregnancy effects the ***Level_of_Hemoglobin*** or not.
+
+```{r}
+preg_temp <- first_data[which(first_data$Sex=='1'),]
+ggplot(preg_temp, aes(x = Level_of_Hemoglobin)) +
+  xlab("Level of Hemoglobin") +
+  geom_density(aes(fill = Pregnancy), alpha = 0.5)+
+  scale_fill_discrete(labels=c('Non-pregnant Female', 'Pregnant Female'))
+```
+
+It's clear that non-pregnant women have higher hemoglobin level.
+</br>
+Now, we should check the distribution of the blood pressure values of our patients in the second dataset before and after experiment.
+
+```{r}
+
+before_exp <- data.frame(as.numeric(second_data$Before_exp_BP))
+colnames(before_exp) <- "Blood_Pressure"
+before_exp$time <- "a.before"
+after_exp <- data.frame(as.numeric(second_data$After_exp_BP))
+colnames(after_exp) <- "Blood_Pressure"
+after_exp$time <- "b.after"
+
+before_after_table <- rbind(before_exp,after_exp)
+
+ggplot(before_after_table, aes(x=Blood_Pressure, y=time)) + 
+  geom_boxplot()+ coord_flip()
+```
+
+
+<br/><br/><br/>
+
+## 4) Central Limit Theorem
+<br/>
+
+Central limit theorem states that when a natural event occurs repeatedly, it is more likely to form a normal distribution in terms of how many times that specific outcome occured compared to other outcomes'.
+<br/>
+In our dataset, we assume that when we take a sample from a patient's BMI (Body Mass Index) repeatedly and wrote these values down, we would see a normal distribution.
+<br/>
+In order to put this assumption to test, first, from our dataset that has a size of 2000, we took sample with the size of 10 ,and wrote down their mean, repeated this process for 500 times, and then we checked these values' mean and standard deviation, and then we did the same thing with a sample that has a size of 50. Let's see the results. 
+
+```{r}
+sample10 <- c()
+
+n = 500
+for (i in 1:n){
+  sample10[i] = mean(sample(first_data$BMI, 10, replace=TRUE))
+}
+
+hist(sample10, col ='steelblue', xlab='BMI', main='Sample size = 10')
+
+
+sample50 <- c()
+for (i in 1:n){
+  sample50[i] = mean(sample(first_data$BMI, 50, replace=TRUE))
+}
+
+hist(sample50, col ='steelblue', xlab='BMI', main='Sample size = 50')
+
+
+Mean <- mean(sample10)
+Standart_Deviation <- sd(sample10)
+sample10df <- t(data.frame(Mean, Standart_Deviation))
+
+sample50.mean <- mean(sample50)
+sample50.sd <- sd(sample50)
+sample50df <- t(data.frame(sample50.mean,sample50.sd))
+
+mean_sd_df <- cbind(sample10df, sample50df)
+colnames(mean_sd_df) <- c("Sample (n=10)","Sample (n=50)")
+
+kable(t(mean_sd_df), format = "markdown")
+```
+
+While the mean is almost the same, the standard deviation is down to more than it's half. Which shows that when the sample size increases, the values becomes closer to mean.
+
+<br/><br/><br/>
+
+## 5) Confidence Interval
+<br/>
+
+We calculated confidence interval with 95% confidence level for two columns in our dataset, ***Level_of_Hemoglobin*** and ***BMI***. If we try to create a model that predicts a value in one of these columns, with 95% confidence, the predicted values will be in these intervals.
+
+```{r}
+
+
+level_of_hemoglobin_mean <- mean(first_data$Level_of_Hemoglobin)
+level_of_hemoglobin_sd <- sd(first_data$Level_of_Hemoglobin)
+level_of_hemoglobin_se <- level_of_hemoglobin_sd/sqrt(length(first_data))
+t.score <-  qt(p=0.05, df=1999,lower.tail=F)
+
+error <- t.score * level_of_hemoglobin_se
+lower.bound <- level_of_hemoglobin_mean  - error
+upper.bound <- level_of_hemoglobin_mean  + error
+
+print(paste("CI for hemoglobin-level: ", lower.bound, "-", upper.bound))
+
+
+
+BMI_mean <- mean(first_data$BMI)
+BMI_sd <- sd(first_data$BMI)
+BMI_se <- BMI_sd/sqrt(length(first_data))
+t.score <-  qt(p=0.05, df=1999,lower.tail=F)
+
+error <- t.score * BMI_se
+lower.bound <- BMI_mean  - error
+upper.bound <- BMI_mean  + error
+
+print(paste("CI for BMI: ", lower.bound, "-", upper.bound))
+
+
+```
+
+<br/><br/><br/>
+
+## 6) Transformation
+<br/>
+
+We performed log-transformation in the data visualization section before as follows:
+
+```{r}
+# first_data$Log_Level_of_Hemoglobin <- log(first_data$Level_of_Hemoglobin)
+```
+
+It was obvious that the variable was looking much more like a normally distributed variable than before.
+
+<br/><br/><br/>
+
+## 7) Single t-test
+<br/>
+
+### a. Aim
+
+We wanted to compare the ***Level_of_Hemoglobin*** of the smoking patients and not smoking patients. In detail, our hypothesis is : 
+<br/>
+The means of ***Level_of_Hemoglobin***s of the patients who smoke and who doesn't smoke are not equal.
+
+<br/>
+
+### b. Hypothesis and Level of Significance
+
+H0: μ(smoking) = μ(notSmoking)
+H1: μ(smoking) ≠ μ(notSmoking)
+<br/>
+Our level of significance (α) will be 0.05.
+
+<br/>
+
+### c. Assumption Check
+
+#### Assumptions of Two Sample t-Test
+
+1. The two samples are random and independent.
+2. The populations from which the samples are drawn are either normal or the sample sizes are large.
+3. The populations have the same standard deviation. 
+
+Since our samples are random and independent, also their sizes are large, assumptions 1 and 2 are valid. Now, we will check if the assumption 3 is valid.
+
+```{r}
+
+not_Smoking <- data.frame(first_data[which(first_data$Smoking=='0'), ]$Level_of_Hemoglobin)
+colnames(not_Smoking) <- "Level_of_Hemoglobin of Not Smoking Patients"
+smoking <- data.frame(first_data[which(first_data$Smoking=='1'), ]$Level_of_Hemoglobin)
+colnames(smoking) <- "Level_of_Hemoglobin of Smoking Patients"
+
+sd(not_Smoking$`Level_of_Hemoglobin of Not Smoking Patients`)
+sd(smoking$`Level_of_Hemoglobin of Smoking Patients`)
+
+var.test(not_Smoking$`Level_of_Hemoglobin of Not Smoking Patients`, smoking$`Level_of_Hemoglobin of Smoking Patients`)
+```
+
+In variance test, since our p-value is greater than 0.05, we can reject H0. That means the variances of our samples are not equal. Therefore, we can say that the assumption 3 is violated. 
+
+<br/>
+
+### d. Which Test to Use
+
+Since variances are not equal and the sample sizes are not equal, it is recommended to use Welch's t-test if the populations are at least approximately normally distributed. Let's check if they are or not.
+
+```{r}
+smokingTransformed <- log(smoking$`Level_of_Hemoglobin of Smoking Patients`)
+notSmokingTransformed <- log(not_Smoking$`Level_of_Hemoglobin of Not Smoking Patients`)
+shapiro.test(smokingTransformed)
+shapiro.test(notSmokingTransformed)
+```
+
+Since our p-values are much smaller than 0.05, we can see that the samples are not normally distributed. But, still, let's check the density plots.
+
+```{r plotsfornormality, figures-side, fig.show="hold", out.width="50%"}
+plot(density(smokingTransformed))
+plot(density(notSmokingTransformed))
+```
+
+We can see that the populations are approximately normally distributed in these density plots, therefore we can use Welch's t-test.
+
+<br/>
+
+### e. Result
+
+```{r}
+t.test(smokingTransformed,notSmokingTransformed,conf.level = 0.95)
+```
+
+Since our p value is greater than 0.05, we reject the H0. That means our hypothesis, which was μ(smoking) ≠ μ(notSmoking) is correct with 95% confidence.
+
+<br/>
+
+### f. Conclusion
+
+The test we did above shows that the means of ***Level_of_Hemoglobin***s of the patients who smoke and who doesn't smoke are not equal with 95% confidence.
+
+<br/>
+
+### g. Errors
+
+Type 1 Error: If we incorrectly reject H0, that means we concluded that the means are not equal when they are.
+Type 2 Error: If we incorrectly fail to reject H0, that means we concluded that the means are equal when they are not.
+
+
+<br/><br/><br/>
+
+## 8) Paired t-test
+<br/>
+
+### a. Aim
+
+We wanted to compare the blood pressures of patients before and after the experiment. In detail, our hypothesis is : 
+<br/>
+The experiment decreases the blood pressures 10 units on average.
+
+<br/>
+
+### b. Hypothesis and Level of Significance
+
+H0: μ(before) - μ(after) = 10
+H1: μ(before) - μ(after) ≠ 10
+<br/>
+Our level of significance (α) will be 0.05.
+
+<br/>
+
+### c. Assumption Check
+
+Since we have dependant data, due to values being the results of the same patients under different conditions, we need to use paired t-test.
+
+#### Assumptions of Paired t-Test
+
+1. The sample is random.
+2. The data is matched pairs.
+3. The differences have a normal distribution or the sample size is large. 
+
+First two assumptions are valid. Now, we should check if the assumption 3 is valid or violated.
+
+```{r}
+difference <- second_data$Before_exp_BP - second_data$After_exp_BP
+mean(difference)
+shapiro.test(difference)
+```
+
+Since the p-value is much smaller than 0.05, we can say that the differences between before and after values are not distributed normally. Let's check the density plot as well.
+
+```{r}
+plot(density(difference))
+```
+
+As we can see in the density plot as well, differences between values are not distributed normally. 
+
+<br/>
+
+### d. Result
+
+Since the differences between values are not distributed normally, we need to use Wilcoxon Signed Rank Test.
+
+```{r}
+wilcox.test(second_data$After_exp_BP,second_data$Before_exp_BP, paired = TRUE, mu = 10)
+```
+
+Since p-value is less than 0.05, we reject H0. That means our hypothesis, which was μ(before) - μ(after) = 10 is not correct.
+
+
+<br/>
+
+
+### e. Conclusion
+
+The test we did above shows that the experiment doesn't decrease the blood pressures 10 units on average with 95% confidence.
+
+<br/>
+
+
+<br/><br/><br/>
+
+## 9) Fisher's Exact Test
+<br/>
+
+### a. Aim
+
+We wanted to see if there is an association between smoking and the hemoglobin levels. In detail, our hypothesis is : 
+<br/>
+There is an association between smoking and the hemoglobin levels.
+
+<br/>
+
+### b. Hypothesis and Level of Significance
+
+H0: Smoking doesn't effect hemoglobin levels.
+H1: Smoking effect hemoglobin levels.
+<br/>
+Our level of significance (α) will be 0.05.
+
+mosaicplot(fisher_table,
+  main = "Smokers vs Level of Hemoglobin Below Average",
+  color = TRUE
+)
+
+<br/>
+
+### c. Result
+
+We should prepare the data to apply Fisher's Exact Test. In order to do this, we created a new nominal column that shows whether the patient has level of hemoglobin below average or not with values of ones and zeros.
+
+```{r}
+first_data$LOH_below_average <- "Hemoglobin_Level_Below_Average"
+for(i in 1:length(first_data$Level_of_Hemoglobin)){
+  if(first_data[i,]$Level_of_Hemoglobin<mean(first_data$Level_of_Hemoglobin)){
+    first_data[i,]$LOH_below_average = "Hemoglobin_Level_Above_Average"
+  }
+}
+
+fisher_table <- with(first_data , table(LOH_below_average,Smoking))
+
+fisher_exact_test <- fisher.test(fisher_table, conf.level = 0.95)
+
+kable(fisher_table,
+      col.names = c("Not_Smoking","Smoking"))
+fisher_exact_test
+```
+
+Since the p-value is greater than 0.05, we do not reject H0.
+
+<br/>
+
+### d. Conclusion
+
+The test we did above shows that there is no association between smoking and the level of hemoglobin, which means knowing one value doesn't mean anything for the other value with 95% confidence.
+
+<br/>
+
+### e. Odds Ratio
+
+Odds ratio is approximately 1, which indicates that there is no association between these two nominal variables.
+
+<br/>
+
+<br/><br/><br/>
+
+## 10) ANOVA and Tukey Test
+<br/>
+
+### a. Aim
+
+We wanted to see if there is an association between alcohol consumption and level of stress. In detail, our hypothesis is : 
+<br/>
+Level of stress increases the alcohol consumption.
+
+<br/>
+
+### b. Hypothesis and Level of Significance
+
+H0: μ(alcohol_consumption_under_low_stress) = μ(alcohol_consumption_under_med_stress) = μ(alcohol_consumption_under_high_stress)
+H1: μ(alcohol_consumption_under_low_stress) ≠ μ(alcohol_consumption_under_med_stress) ≠ μ(alcohol_consumption_under_high_stress)
+
+<br/>
+
+### c. Assumption Check
+
+1. Each sample is taken from a normally distributed population
+2. Each sample has been drawn independently of the other samples
+3. The variance of data in the different groups should be the same
+4. The dependent variable should be continuous
+
+Since our samples are independent, the dependant variable is continous, assumptions 2 and 4 are valid. Now, we will check if the assumptions 1 and 3 are valid or violated.
+
+```{r}
+ggplot(first_data, aes(x=alcohol_consumption_per_day, y=Level_of_Stress)) + 
+  geom_boxplot()+ coord_flip()
+```
+
+We can see that the distributions and the variances of these samples are almost identical. Let's test their normalities. 
+
+```{r}
+
+shapiro.test(first_data[which(first_data$Level_of_Stress==1),]$alcohol_consumption_per_day)
+shapiro.test(first_data[which(first_data$Level_of_Stress==2),]$alcohol_consumption_per_day)
+shapiro.test(first_data[which(first_data$Level_of_Stress==3),]$alcohol_consumption_per_day)
+
+```
+
+Seems like there is a problem here, since we reject H0 due to p-value being less than 0.05. Let's try log-transformation.
+
+```{r}
+
+shapiro.test(log(first_data[which(first_data$Level_of_Stress==1),]$alcohol_consumption_per_day))
+shapiro.test(log(first_data[which(first_data$Level_of_Stress==2),]$alcohol_consumption_per_day))
+shapiro.test(log(first_data[which(first_data$Level_of_Stress==3),]$alcohol_consumption_per_day))
+
+```
+
+Samples are still not normally distributed even after the log-transformation. We will continue assuming that the samples are distributed normally.
+
+```{r}
+first_data_for_anova <- first_data[,c(11,12)]
+
+bartlett.test(alcohol_consumption_per_day~Level_of_Stress,data=first_data_for_anova)
+
+```
+
+Since the p-value is greater than 0.05, we fail to reject H0, which is: *The variance among each group is equal*. Therefore we can conclude that the variances between these three groups are equal, meaning our third assumption is also valid.
+
+<br/>
+
+### d. Results of ANOVA
+
+```{r}
+anova_model <- aov(alcohol_consumption_per_day~Level_of_Stress,data=first_data_for_anova)
+summary(anova_model)
+```
+
+Since our p-value is much higher than 0.05, we reject H0. Therefore we can say that there is no significant difference in the mean values between three groups.
+
+<br/>
+
+### e. Conclusion of ANOVA
+
+The test we did above shows that the level of stress doesn't effect the alcohol consumption.
+
+<br/>
+
+### f. Results of Tukey
+
+```{r}
+TukeyHSD(anova_model)
+```
+
+Since each of the adjusted p-values are greater than 0.05, we can conclude that there is no significant difference in the mean values between each group.
+
+<br/>
+
+### g. Conclusion of Tukey
+
+The test we did above shows that the level of stress doesn't effect the alcohol consumption.
+
+<br/>
+
+
+</br>
+</br>
+
+## 11) Multiple Linear Regression 
+<br/>
+
+### a. Aim
+
+We wanted to see if we can predict the ***Level_of_Hemoglobin*** or not with the values of ***Age***, ***BMI***, ***Physical_activity***, ***salt_content_in_the_diet*** and ***alcohol_consumption_per_day***.
+
+<br/>
+
+### b. Regression Equation
+
+***Level_of_Hemoglobin*** is our response variable.***Age***, ***BMI***, ***Physical_activity***, ***salt_content_in_the_diet*** and ***alcohol_consumption_per_day*** are our explanatory variables. 
+
+```{r}
+first_data_for_mlr <- first_data[,c(3,4,5,9,10,11)]
+mlr <- lm(Level_of_Hemoglobin~. ,data = first_data_for_mlr)
+
+mlr$coefficients
+```
+
+***Level_of_Hemoglobin*** = 12.15644 + (-2.439991x10^-2^ x ***Age***) + (2.293213x10^-2^ x ***BMI***) + (-3.176701x10^-6^ x ***Physical_activity***) + (1.561330x10^-6^ x ***salt_content_in_the_diet***) + (1.862652x10^-4^  x ***alcohol_consumption_per_day***) + 2.134
+
+<br/>
+
+### c. Hypothesis and Level of Significance
+
+The null hypothesis states that all coefficients in the model are equal to zero. In other words, none of the predictor variables have a statistically significant relationship with the response variable, y.
+<br/>
+The alternative hypothesis states that not every coefficient is simultaneously equal to zero.
+<br/>
+H0: β1 = β2 = … = βk = 0
+H1: β1 = β2 = … = βk ≠ 0
+<br/>
+We will use a level of significance of 95%.
+
+<br/>
+
+### d. Find the Best Model:
+
+```{r}
+summary(mlr)
+```
+
+R has already marked the best explanatory variables in our dataset that all have a smaller p-value than 0.05.
+
+```{r}
+best_model <- step(mlr)
+```
+
+As we can see above, step() function decreased the number of columns to 2, which are the most important and meaningful columns in order to predict ***Level_of_Hemoglobin***.
+
+<br/>
+
+### e. Assumption Check:
+
+1. A linear relationship between the dependent and independent variables
+<br/>
+As we know from the correlation matrix from the first section, ***Level_of_Hemoglobin*** only had a visible linear correlation with ***Age*** and ***BMI***.
+<br/>
+2. The independent variables are not highly correlated with each other
+<br/>
+As we know from the correlation matrix from the first section, there is no visible linear correlation between independent variables.
+<br/>
+3. The variance of the residuals is constant
+<br/>
+```{r}
+plot(best_model$fitted.values,best_model$residuals, abline(h = 0))
+```
+Since the points are distributed fairly across all the values of independent variables, we can say that the variance of the residuals is constant.
+<br/>
+4. Independence of observation
+<br/>
+We know that our observations are independent.
+<br/>
+5. Multivariate normality
+<br/>
+```{r}
+ggplot(best_model, aes(x=best_model$residuals)) + 
+  geom_histogram(aes(y=..density..),colour="black", fill="white",binwidth = 0.5)+
+  geom_density(alpha=.2, fill="#FF6666") 
+```
+
+We can see that the residuals are almost perfectly normally distributed.
+
+<br/>
+Since all our assumptions are valid, we can continue.
+<br/>
+
+### f. Result
+
+```{r}
+summary(mlr)
+```
+
+Since p-value of the model is less than 0.05, we can say that our model is meaningful.
+Also the variables that have a p-value less than 0.05 are meaningful.
+
+```{r}
+summary(best_model)
+```
+Since p-value of the model is less than 0.05, we can say that our model is meaningful.
+<br/>
+When we look at the Adjusted R-square values, we can see an increase. Therefore it's safe to say the best_model is a better model than mlr.
+<br/>
+
+### g. Conclusion
+
+We wanted to see if we can predict the ***Level_of_Hemoglobin*** or not with the values of ***Age***, ***BMI***, ***Physical_activity***, ***salt_content_in_the_diet*** and ***alcohol_consumption_per_day***. But after the processes above, we know that the ***Age*** and ***BMI*** columns are enough for us to predict ***Level_of_Hemoglobin***.
+
+<br/>
+
+### h. Prediction
+
+```{r, fig.show="hold"}
+# Prediction for MLR
+to_be_predicted_mlr<- data.frame(44,26,27456,30213,400)
+colnames(to_be_predicted_mlr) <- c("Age","BMI","Physical_activity","salt_content_in_the_diet","alcohol_consumption_per_day")
+predicted_value_mlr <- predict(mlr,newdata = as.data.frame(to_be_predicted_mlr))
+
+# Prediction for Best_Model
+to_be_predicted_reduced_mlr <- data.frame(64,36)
+colnames(to_be_predicted_reduced_mlr) <- c("Age","BMI")
+predicted_value_reduce_mlr <- predict(best_model,newdata = as.data.frame(to_be_predicted_reduced_mlr))
+
+print(paste("Predicted value for MLR: ", predicted_value_mlr))
+print(paste("Predicted value for Best_Model: ", predicted_value_reduce_mlr))
+```
+
+<br/>

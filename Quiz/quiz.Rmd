@@ -1,0 +1,292 @@
+---
+title: "Statistical Computing Quiz 2022"
+author: "Zeynep Filiz EREN"
+date: "4/23/2022"
+output: html_document
+---
+
+<style type="text/css">
+  body{
+  font-size: 14pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!--IMPORTANT!!!!! Please fill out the sections that say:"write your ... here"-->
+
+<br>
+
+## **Questions**
+
+<br>
+
+### **<span style="text-decoration:underline">Question 1.</span>	**
+**One way to measure a person’s fitness is to measure their body fat percentage. Average body fat percentages vary by age, but according to some guidelines, the normal range for men is 15-20% body fat, and the normal range for women is 20-25% body fat. <br> Our sample data is from a group of men and women who did workouts at a gym three times a week for a year. Then, their trainer measured the body fat and wonders whether the body fat is the same for men and women. The table below shows the data. **
+
+<br>
+
+|       |   |   |    |    |    |    |    |   |    |    |
+|-------|---|---|----|----|----|----|----|---|----|----|
+| Men   | 1 | 8 | 14 | 13 | 20 | 24 | 16 | 7 | 6  | 19 |
+| Women | 5 | 7 | 22 | 21 | 23 | 28 | 16 | 6 | 12 | 23 |
+|  |  |  |  |  |  |  |  |  |  |  |
+
+<br>
+
+<br>
+
+```{r}
+  men <- c(1,8,14,13,20,24,16,7,6,19)
+  women <- c(5,7,22,21,23,28,16,6,12,23)
+```
+
+<br>
+
+<span style="text-decoration:underline"> **a.**	Build histograms and boxplots for each group. Comment about the distribution and the outliers.</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline"> **b.**	Write down a hypothesis to test if gender affects the amount of body fat. </span>
+
+<br>
+
+_Write your hypothesis here_
+
+<br>
+
+<span style="text-decoration:underline"> **c.**	Decide whether this is an independent or dependent two sample test.</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline"> **d.**	Check normality assumption/ assumptions needed.</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline"> **e.**	Test your hypothesis. (α=0.05)</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+<span style="text-decoration:underline"> **f.**	Comment:</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline"> **g.**	Write down a hypothesis to test if being a women means “the person is more likely to have more body fat”.</span>
+
+<br>
+
+_Write your hypothesis here_
+
+<br>
+
+<span style="text-decoration:underline"> **h.**	Test your hypothesis. (α=0.05)</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+<span style="text-decoration:underline"> **i.**	Comment:</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline"> **j.**	Find the confidence intervals of mean body fat for men and women separately and compare them. (α=0.05)</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+
+
+<br>
+
+### **<span style="text-decoration:underline">Question 2.</span>	**
+**The same data, but totally different scenario: Lets say the below table corresponds to the “%body fat of 10 people”, which are measured at the time they started doing sports for 3 times a week; and after 3 months. **
+
+<br>
+
+|       |   |   |    |    |    |    |    |   |    |    |
+|-------|---|---|----|----|----|----|----|---|----|----|
+| After 3 months | 1 | 8 | 14 | 13 | 20 | 24 | 16 | 7 | 6  | 19 |
+| Start day      | 5 | 7 | 22 | 21 | 23 | 28 | 16 | 6 | 12 | 23 |
+|  |  |  |  |  |  |  |  |  |  |  |
+
+<br>
+
+<br>
+
+```{r}
+  start <- c(5,7,22,21,23,28,16,6,12,23)
+  after <- c(1,8,14,13,20,24,16,7,6,19)
+```
+
+<br>
+
+<span style="text-decoration:underline">**a.**	Write down a hypothesis to test if doing sports decreases the amount of body fat.</span>
+
+<br>
+
+_Write your hypothesis here_
+
+<br>
+
+<span style="text-decoration:underline">**b.**	Decide whether this is an independent or dependent two sample test.</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline">**c.**	Check normality assumption/assumptions.</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+<span style="text-decoration:underline">**d.**	Test your hypothesis. (α=0.05)</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+<span style="text-decoration:underline">**e.**	Comment:</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+
+
+<br>
+
+### **<span style="text-decoration:underline">Question 3.</span>	**
+**Another scenario: Lets say the below table corresponds to the “muscle gain of 30 people who started doing sports 6 months ago”: 1st group did sports once a week, 2nd group did sports three times a week, 3rd group did sports five times a week.  **
+
+
+
+<br>
+
+|       |   |   |    |    |    |    |    |   |    |    |
+|-------|---|---|----|----|----|----|----|---|----|----|
+| Group 1        | 1        | 3        | 6        | 5        | 7        | 2        | 1        | 2        | 3        | 5        |
+|     Group 2    |     9    |     7    |     7    |     4    |     3    |     6    |     5    |     4    |     6    |     7    |
+|     Group 3    |     6    |     8    |     7    |     7    |     9    |     5    |     7    |     8    |     6    |     7    |
+|  |  |  |  |  |  |  |  |  |  |  |
+
+<br>
+
+<br>
+
+```{r}
+  group1 <- c(1,3,6,5,7,2,1,2,3,5)
+  group2 <- c(9,7,7,4,3,6,5,4,6,7)
+  group3 <- c(6,8,7,7,9,5,7,8,6,7)
+```
+
+<br>
+
+<span style="text-decoration:underline">**a.**	Write down a hypothesis to test if these groups have equal means or not. (α=0.05)</span>
+
+<br>
+
+_Write your hypothesis here_
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+<span style="text-decoration:underline">**b.**	Comment:</span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<span style="text-decoration:underline">**c.**	Implement TukeyHSD test and compare the groups. (α=0.05)</span>
+
+<br>
+
+```{r}
+  # Write your code here
+```
+
+<br>
+
+<span style="text-decoration:underline">**d.**	Comment: </span>
+
+<br>
+
+*Write your comment here*
+
+<br>
+
+<br>
+
+<br>

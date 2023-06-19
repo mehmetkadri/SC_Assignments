@@ -1,0 +1,353 @@
+---
+title: "Statistical Computing Quiz 2022"
+author: "Zeynep Filiz EREN"
+date: "4/23/2022"
+output: html_document
+---
+
+<style type="text/css">
+  body{
+  font-size: 14pt;
+}
+</style>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<!--IMPORTANT!!!!! Please fill out the sections that say:"write your ... here"-->
+
+<br>
+
+## **Questions**
+
+<br>
+
+### **<span style="text-decoration:underline">Question 1.</span>	**
+**One way to measure a person’s fitness is to measure their body fat percentage. Average body fat percentages vary by age, but according to some guidelines, the normal range for men is 15-20% body fat, and the normal range for women is 20-25% body fat. <br> Our sample data is from a group of men and women who did workouts at a gym three times a week for a year. Then, their trainer measured the body fat and wonders whether the body fat is the same for men and women. The table below shows the data. **
+
+<br>
+
+|       |   |   |    |    |    |    |    |   |    |    |
+|-------|---|---|----|----|----|----|----|---|----|----|
+| Men   | 1 | 8 | 14 | 13 | 20 | 24 | 16 | 7 | 6  | 19 |
+| Women | 5 | 7 | 22 | 21 | 23 | 28 | 16 | 6 | 12 | 23 |
+|  |  |  |  |  |  |  |  |  |  |  |
+
+<br>
+
+<br>
+
+```{r}
+  men <- c(1,8,14,13,20,24,16,7,6,19)
+  women <- c(5,7,22,21,23,28,16,6,12,23)
+```
+
+<br>
+
+<span style="text-decoration:underline"> **a.**	Build histograms and boxplots for each group. Comment about the distribution and the outliers.</span>
+
+<br>
+
+```{r}
+  hist(men,col="blue",breaks = 8)
+  hist(women,col = "red",breaks = 8)
+  
+  boxplot(men)
+  boxplot(women)
+```
+
+<br>
+
+Men dataset is distributed normally but women dataset is not distributed normally.
+
+<br>
+
+<span style="text-decoration:underline"> **b.**	Write down a hypothesis to test if gender affects the amount of body fat. </span>
+
+<br>
+
+µ0 = mean(men)
+
+µ1 = mean(women)
+
+H0: µ0 = µ1
+
+H1: µ0 != µ1
+
+<br>
+
+<span style="text-decoration:underline"> **c.**	Decide whether this is an independent or dependent two sample test.</span>
+
+<br>
+
+These datasets are not dependent, therefore we will do independent two sample t-test.
+
+<br>
+
+<span style="text-decoration:underline"> **d.**	Check normality assumption/ assumptions needed.</span>
+
+<br>
+
+```{r}
+  shapiro.test(men)
+  shapiro.test(women)
+```
+
+<br>
+
+H0: Data is Normally Distributed
+
+H1: Data is not Normally Distributed    alpha=0.05
+
+If p <= 0.05: then the null hypothesis can be rejected (meaning the variable is not normally distributed).
+
+If p > 0.05: then the null hypothesis can not be rejected (meaning the variable might be normally distributed or not).
+
+p>0.05, two samples are normally distributed.
+
+<br>
+
+<span style="text-decoration:underline"> **e.**	Test your hypothesis. (α=0.05)</span>
+
+<br>
+
+```{r}
+  t.test(men,women,alternative = "two.sided",mu=0,paired = FALSE,var.equal = TRUE)
+```
+
+<br>
+
+<span style="text-decoration:underline"> **f.**	Comment:</span>
+
+<br>
+
+We can not reject H0, which means the means of the two datasets can be equal but they might be different as well.
+
+<br>
+
+<span style="text-decoration:underline"> **g.**	Write down a hypothesis to test if being a women means “the person is more likely to have more body fat”.</span>
+
+<br>
+
+µ0 = men
+
+µ1 = women
+
+H0: µ0 >= µ1
+
+H1: µ0 < µ1
+
+<br>
+
+<span style="text-decoration:underline"> **h.**	Test your hypothesis. (α=0.05)</span>
+
+<br>
+
+```{r}
+  t.test(men,women,alternative = "greater",mu=0,paired = FALSE,var.equal = TRUE)
+```
+
+<br>
+
+<span style="text-decoration:underline"> **i.**	Comment:</span>
+
+<br>
+
+We can reject H0, which means women probably have more body fat compared to men.
+
+<br>
+
+<span style="text-decoration:underline"> **j.**	Find the confidence intervals of mean body fat for men and women separately and compare them. (α=0.05)</span>
+
+<br>
+
+```{r}
+  t.score <-  qt(p=0.05, df=length(men)-1,lower.tail=F)
+
+  men.mean <- mean(men)
+  men.sd <- sd(men)
+  men.se <- men.sd/sqrt(length(men))
+  error <- t.score * men.se
+  lower.bound <- men.mean  - error
+  upper.bound <- men.mean  + error
+  print(c(lower.bound,upper.bound))
+
+
+  t.score <-  qt(p=0.05, df=length(women)-1,lower.tail=F)
+
+  women.mean <- mean(women)
+  women.sd <- sd(women)
+  women.se <- women.sd/sqrt(length(women))
+  error <- t.score * women.se
+  lower.bound <- women.mean  - error
+  upper.bound <- women.mean  + error
+  print(c(lower.bound,upper.bound))
+```
+
+<br>
+
+
+
+<br>
+
+### **<span style="text-decoration:underline">Question 2.</span>	**
+**The same data, but totally different scenario: Lets say the below table corresponds to the “%body fat of 10 people”, which are measured at the time they started doing sports for 3 times a week; and after 3 months. **
+
+<br>
+
+|       |   |   |    |    |    |    |    |   |    |    |
+|-------|---|---|----|----|----|----|----|---|----|----|
+| After 3 months | 1 | 8 | 14 | 13 | 20 | 24 | 16 | 7 | 6  | 19 |
+| Start day      | 5 | 7 | 22 | 21 | 23 | 28 | 16 | 6 | 12 | 23 |
+|  |  |  |  |  |  |  |  |  |  |  |
+
+<br>
+
+<br>
+
+```{r}
+  start <- c(5,7,22,21,23,28,16,6,12,23)
+  after <- c(1,8,14,13,20,24,16,7,6,19)
+```
+
+<br>
+
+<span style="text-decoration:underline">**a.**	Write down a hypothesis to test if doing sports decreases the amount of body fat.</span>
+
+<br>
+
+µ0 = start
+
+µ1 = after
+
+H0: µ0 <= µ1
+
+H1: µ0 > µ1
+
+<br>
+
+<span style="text-decoration:underline">**b.**	Decide whether this is an independent or dependent two sample test.</span>
+
+<br>
+
+Since people are the same, samples are dependent. Therefore we will need dependent two sample t-test.
+
+<br>
+
+<span style="text-decoration:underline">**c.**	Check normality assumption/assumptions.</span>
+
+<br>
+
+```{r}
+  shapiro.test(start)
+  shapiro.test(after)
+```
+
+<br>
+
+H0: Data is Normally Distributed
+H1: Data is not Normally Distributed    alpha=0.05
+
+<br>
+
+<span style="text-decoration:underline">**d.**	Test your hypothesis. (α=0.05)</span>
+
+<br>
+
+```{r}
+  t.test(start,after, mu =0 ,paired = TRUE, alternative = "less",conf.level = 0.95)
+```
+
+<br>
+
+<span style="text-decoration:underline">**e.**	Comment:</span>
+
+<br>
+
+  We can not reject H0 and we can say that doing sports decreases the amount of body fat. 
+
+<br>
+
+
+
+<br>
+
+### **<span style="text-decoration:underline">Question 3.</span>	**
+**Another scenario: Lets say the below table corresponds to the “muscle gain of 30 people who started doing sports 6 months ago”: 1st group did sports once a week, 2nd group did sports three times a week, 3rd group did sports five times a week.  **
+
+
+
+<br>
+
+|       |   |   |    |    |    |    |    |   |    |    |
+|-------|---|---|----|----|----|----|----|---|----|----|
+| Group 1        | 1        | 3        | 6        | 5        | 7        | 2        | 1        | 2        | 3        | 5        |
+|     Group 2    |     9    |     7    |     7    |     4    |     3    |     6    |     5    |     4    |     6    |     7    |
+|     Group 3    |     6    |     8    |     7    |     7    |     9    |     5    |     7    |     8    |     6    |     7    |
+|  |  |  |  |  |  |  |  |  |  |  |
+
+<br>
+
+<br>
+
+```{r}
+  group1 <- c(1,3,6,5,7,2,1,2,3,5)
+  group2 <- c(9,7,7,4,3,6,5,4,6,7)
+  group3 <- c(6,8,7,7,9,5,7,8,6,7)
+```
+
+<br>
+
+<span style="text-decoration:underline">**a.**	Write down a hypothesis to test if these groups have equal means or not. (α=0.05)</span>
+
+<br>
+
+H0: µ0 = µ1 = µ2
+
+H1: At least one of the means is different.
+
+<br>
+
+```{r}
+groups <- c(group1,group2,group3)
+frequent  <- as.factor(c(rep("once",10),rep("three",10),rep("five",10)))
+data <- data.frame(groups,frequent)
+
+bartlett.test(groups~frequent,data = data)
+
+model <- aov(groups~frequent,data = data)
+summary(model)
+```
+
+<br>
+
+<span style="text-decoration:underline">**b.**	Comment:</span>
+
+<br>
+
+Since p>0.05, we can't reject H0. Therefore, we don't have any idea if the means are same.
+
+<br>
+
+<span style="text-decoration:underline">**c.**	Implement TukeyHSD test and compare the groups. (α=0.05)</span>
+
+<br>
+
+```{r}
+  TukeyHSD(model)
+```
+
+<br>
+
+<span style="text-decoration:underline">**d.**	Comment: </span>
+
+<br>
+
+Since p-values of the comparisons "once-five" and "three-once" are less then 0.05, we can say that "once" is especially different from other two. 
+
+<br>
+
+<br>
+
+<br>
